@@ -1,7 +1,26 @@
-log/
-devel/
+# ROS 2 Workspace Build Directories
 build/
 install/
-.vs/
-src/CMakeLists.txt
-.catkin_workspace
+log/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# C++ objects and libraries
+*.o
+*.so
+*.so.*
+*.a
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
