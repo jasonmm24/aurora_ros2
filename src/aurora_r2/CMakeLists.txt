@@ -9,6 +9,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 
@@ -23,6 +24,7 @@ ament_target_dependencies(aurora_bridge_node
   rclcpp
   sensor_msgs
   nav_msgs
+  geometry_msgs
   cv_bridge
 )
 
@@ -39,6 +41,10 @@ install(TARGETS
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../aurora_remote_public/lib/linux_x86_64/
   DESTINATION lib
   FILES_MATCHING PATTERN "*.so*"
+)
+
+install(DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch
 )
 
 ament_package()

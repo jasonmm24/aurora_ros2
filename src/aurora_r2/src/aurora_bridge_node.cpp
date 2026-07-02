@@ -6,12 +6,14 @@
 #include "sensor_msgs/point_cloud2_iterator.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "cv_bridge/cv_bridge.hpp"
 #include <opencv2/opencv.hpp>
 #include "aurora_pubsdk_inc.h"
 #include "cxx/slamtec_remote_public.hxx"
 #include <cmath>
 #include <limits>
+#include <vector>
 
 class AuroraBridgeNode;
 
@@ -43,10 +45,11 @@ public:
         depth_pub_ = this->create_publisher<sensor_msgs::msg::Image>("camera/depth/image_raw", 10);
         imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>("imu", 50);
         odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 20);
+        pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("robot_pose", 20);
         
         auto map_qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable();
         map_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("map", map_qos);
-        map_points_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("map_points", 10);
+        map_points_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("map_points", map_qos);
 
         odom_timer_ = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&AuroraBridgeNode::publishOdometry, this));
         map_timer_ = this->create_wall_timer(std::chrono::seconds(1), std::bind(&AuroraBridgeNode::publishMap, this));
@@ -163,21 +166,29 @@ public:
         uint64_t timestamp_ns;
         
         if (sdk_->dataProvider.getCurrentPoseSE3WithTimestamp(pose, timestamp_ns)) {
+            auto stamp = this->now();
+            
             auto odom_msg = nav_msgs::msg::Odometry();
-            odom_msg.header.stamp = this->now();
+            odom_msg.header.stamp = stamp;
             odom_msg.header.frame_id = "map";
             odom_msg.child_frame_id = "aurora_base_link";
 
             odom_msg.pose.pose.position.x = pose.translation.x;
             odom_msg.pose.pose.position.y = pose.translation.y;
             odom_msg.pose.pose.position.z = pose.translation.z;
-
             odom_msg.pose.pose.orientation.x = pose.quaternion.x;
             odom_msg.pose.pose.orientation.y = pose.quaternion.y;
             odom_msg.pose.pose.orientation.z = pose.quaternion.z;
             odom_msg.pose.pose.orientation.w = pose.quaternion.w;
 
             odom_pub_->publish(odom_msg);
+
+            auto pose_msg = geometry_msgs::msg::PoseStamped();
+            pose_msg.header.stamp = stamp;
+            pose_msg.header.frame_id = "map";
+            pose_msg.pose = odom_msg.pose.pose;
+            
+            pose_pub_->publish(pose_msg);
         }
     }
 
@@ -276,6 +287,7 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr depth_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
     rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr map_pub_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_points_pub_;
     
